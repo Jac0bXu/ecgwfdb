@@ -116,6 +116,9 @@ train_loader = Data.DataLoader(dataset=train_Data, batch_size=128)
 test_Data = Data.TensorDataset(torch.Tensor(X_test), torch.Tensor(Y_test)) # 返回结果为一个个元组，每一个元组存放数据和标签
 test_loader = Data.DataLoader(dataset=test_Data, batch_size=128)
 
+# 检查 CUDA 是否可用
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 '''
 模型搭建
@@ -137,7 +140,7 @@ class RnnModel(nn.Module):
         output = self.linear(r_out[:,-1,:])
         return output
 
-model = RnnModel()
+model = RnnModel().to(device)
 
 '''
 设置损失函数和参数优化方法
@@ -148,7 +151,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.017)
 '''
 模型训练
 '''
-EPOCHS = 2
+EPOCHS = 20
 for epoch in range(EPOCHS):
     running_loss = 0
     for i, data in enumerate(train_loader):
@@ -175,8 +178,8 @@ for epoch in range(EPOCHS):
 
             # 收集真实标签和预测结果
             if epoch == EPOCHS - 1:
-                all_labels.extend(label.numpy())
-                all_predictions.extend(predicted.numpy())
+                all_labels.extend(label.cpu().numpy())
+                all_predictions.extend(predicted.cpu().numpy())
 
     print(f'Epoch: {epoch + 1}, ACC on test: {correct / total}')
 
