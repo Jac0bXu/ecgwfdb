@@ -31,11 +31,11 @@ def getDataSet(number, X_data, Y_data):
     # 读取心电数据记录
     print("正在读取 " + number + " 号心电数据...")
     # 读取MLII导联的数据
-    record = wfdb.rdrecord('C:/Users/jxxzh/PycharmProjects/ecgwfdb/ecgdata/' + number, channel_names=['MLII'])
+    record = wfdb.rdrecord('C:/Users/Jacob Xu/PycharmProjects/ecgwfdb/ecgdata/' + number, channel_names=['MLII'])
     data = record.p_signal.flatten()
     rdata = denoise(data=data)
     # 获取心电数据记录中R波的位置和对应的标签
-    annotation = wfdb.rdann('C:/Users/jxxzh/PycharmProjects/ecgwfdb/ecgdata/' + number, 'atr')
+    annotation = wfdb.rdann('C:/Users/Jacob Xu/PycharmProjects/ecgwfdb/ecgdata/' + number, 'atr')
     Rlocation = annotation.sample
     Rclass = annotation.symbol
     # 去掉前后的不稳定数据

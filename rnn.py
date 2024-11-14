@@ -6,7 +6,7 @@ import pywt
 import seaborn
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import torch
 import torch.utils.data as Data
 from torch import nn
@@ -39,11 +39,11 @@ def getDataSet(number, X_data, Y_data):
     # 读取心电数据记录
     # print("正在读取 " + number + " 号心电数据...")
     # 读取MLII导联的数据
-    record = wfdb.rdrecord('C:/Users/jxxzh/PycharmProjects/ecgwfdb/ecgdata/' + number, channel_names=['MLII'])
+    record = wfdb.rdrecord('C:/Users/Jacob Xu/PycharmProjects/ecgwfdb/ecgdata/' + number, channel_names=['MLII'])
     data = record.p_signal.flatten()
     rdata = denoise(data=data)
     # 获取心电数据记录中R波的位置和对应的标签
-    annotation = wfdb.rdann('C:/Users/jxxzh/PycharmProjects/ecgwfdb/ecgdata/' + number, 'atr')
+    annotation = wfdb.rdann('C:/Users/Jacob Xu/PycharmProjects/ecgwfdb/ecgdata/' + number, 'atr')
     Rlocation = annotation.sample
     Rclass = annotation.symbol
     # 去掉前后的不稳定数据
@@ -77,6 +77,10 @@ def loadData():
     lableSet = []
     for n in numberSet:
         getDataSet(n, dataSet, lableSet)
+
+    # print(f"Total annotations collected: {len(lableSet)}")
+    # print(f"Data shape before splitting: {len(dataSet)} x {len(dataSet[0]) if len(dataSet) > 0 else 'N/A'}")
+
     # 转numpy数组,打乱顺序
     dataSet = np.array(dataSet).reshape(-1, 300)
     lableSet = np.array(lableSet).reshape(-1, 1)
@@ -95,6 +99,11 @@ def loadData():
     train_index = shuffle_index[test_length:]
     X_test, Y_test = X[test_index], Y[test_index]
     X_train, Y_train = X[train_index], Y[train_index]
+    # 打印训练和测试集的大小
+    print(f"Number of data points used for training: {len(X_train)}")
+    print(f"Number of data points used for testing: {len(X_test)}")
+    print(f"Shape of X_train is {X_train.shape}")
+    print(f"Shape of Y_train is {X_test.shape}")
     return X_train, Y_train, X_test, Y_test
 
 X_train, Y_train, X_test, Y_test = loadData()
@@ -134,12 +143,12 @@ model = RnnModel()
 设置损失函数和参数优化方法
 '''
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.017)
 
 '''
 模型训练
 '''
-EPOCHS = 5
+EPOCHS = 2
 for epoch in range(EPOCHS):
     running_loss = 0
     for i, data in enumerate(train_loader):
@@ -154,6 +163,8 @@ for epoch in range(EPOCHS):
     # 预测
     correct = 0
     total = 0
+    all_labels = []  # 用于存储所有真实标签
+    all_predictions = []  # 用于存储所有预测标签
     with torch.no_grad():
         for data in test_loader:
             inputs, label = data
@@ -162,4 +173,25 @@ for epoch in range(EPOCHS):
             total += label.size(0)
             correct += (predicted == label).sum().item()
 
+            # 收集真实标签和预测结果
+            if epoch == EPOCHS - 1:
+                all_labels.extend(label.numpy())
+                all_predictions.extend(predicted.numpy())
+
     print(f'Epoch: {epoch + 1}, ACC on test: {correct / total}')
+
+
+cm = confusion_matrix(all_labels, all_predictions, labels=range(5))  # 计算混淆矩阵
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['N', 'A', 'V', 'L', 'R'])
+disp.plot(cmap=plt.cm.Blues)  # 显示混淆矩阵
+plt.title('Confusion Matrix (Last Epoch)')  # 添加标题
+plt.show()  # 展示
+
+
+    # 调参
+    # LSTM
+    # 心音 听
+
+
+    # 语义分割
+    # 跑预训练模型
